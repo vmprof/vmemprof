@@ -2868,7 +2868,8 @@ Licensed under the MIT license.
                         // We have to calculate distances in pixels, not in
                         // data units, because the scales of the axes may be different
                         var dx = Math.abs(axisx.p2c(x) - mouseX),
-                            dy = Math.abs(axisy.p2c(y) - mouseY),
+                            dy = 0,
+                            //dy = Math.abs(axisy.p2c(y) - mouseY),
                             dist = dx * dx + dy * dy; // we save the sqrt
 
                         // use <= to ensure last point takes precedence
