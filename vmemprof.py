@@ -15,10 +15,13 @@ if len(sys.argv) != 2:
 
 stats = vmprof.read_profile(sys.argv[1])
 
+MAX = 60
+
 def strip(s):
     s = s.replace("<", "&lt;").replace(">", "&gt;")
     l = s.split(":")
-    l[3] = ".".join(l[3].split("/")[-2:])
+    if len(l[3]) > MAX:
+        l[3] = "..." + l[3][-(MAX - 3):]
     l[1] = "<b>" + l[1] + "</b>"
     return "%s %s:%s" % (l[1], l[3], l[2])
 
