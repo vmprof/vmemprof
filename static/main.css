@@ -14,12 +14,12 @@ body {
     opacity: 80%;
 }
 #chart {
-    width: 800px;
-    height: 600px;
+    width: 70%;
+    height: 95%;
     float:left;
 }
 #stacktrace {
-    left: 820px;
+    left: 70%;
     position: absolute;
     font-size: 12px;
 }
