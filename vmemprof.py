@@ -4,9 +4,9 @@
 Run with output of vmprof run with memory profiling (like vmprof.enable(fileno, 0.01, True))
 """
 
+import re, os, json, sys
 import vmprof
-import os, json, sys
-from flask import Flask, Response, request
+from flask import Flask, Response, request, escape
 app = Flask(__name__)
 
 if len(sys.argv) != 2:
@@ -15,15 +15,17 @@ if len(sys.argv) != 2:
 
 stats = vmprof.read_profile(sys.argv[1])
 
-MAX = 60
+MAX_SOURCEFILE_LEN = 60
 
-def strip(s):
-    s = s.replace("<", "&lt;").replace(">", "&gt;")
-    l = s.split(":")
-    if len(l[3]) > MAX:
-        l[3] = "..." + l[3][-(MAX - 3):]
-    l[1] = "<b>" + l[1] + "</b>"
-    return "%s %s:%s" % (l[1], l[3], l[2])
+def format_stracktrace_line(line):
+    if line is None:
+        return "<unknown>"
+    _, funcname, lineno, sourcefile = line.split(':')
+    sourcefile = re.sub('.*/lib/python[\d\.]+/(site-packages/)?', '', sourcefile)
+    if len(sourcefile) > MAX_SOURCEFILE_LEN:
+        sourcefile = "..." + sourcefile[-(MAX_SOURCEFILE_LEN - 3):]
+    return "<span class=stacktrace-line><span>%s</span> <span>%s:%s</span></span>" \
+        % (escape(funcname), escape(sourcefile), escape(lineno))
 
 def resample_and_pack(profiles, start, end, window_size):
     next = []
@@ -32,7 +34,7 @@ def resample_and_pack(profiles, start, end, window_size):
     skip = (end - start) / window_size
     while i < end:
         prof = profiles[int(i)]
-        stack_trace = "<br/>".join([strip(stats.adr_dict.get(x, '<unknown>')) for x in prof[0]])
+        stack_trace = "".join([format_stracktrace_line(stats.adr_dict.get(x)) for x in prof[0]])
         mem.append((i, prof[3], stack_trace))
         i += skip
     return {'mem': mem}
