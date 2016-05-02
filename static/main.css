@@ -5,14 +5,6 @@ body {
     margin-top: 15px;
     margin-bottom: 15px;
 }
-#start {
-    position: absolute;
-    visibility: none;
-    width: 5px;
-    height: 600px;
-    background-color: red;
-    opacity: 80%;
-}
 #chart {
     width: 70%;
     height: 95%;

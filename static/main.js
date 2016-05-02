@@ -1,26 +1,3 @@
-var clicks = [];
-var bind = false;
-
-function plotclick(event, pos, item)
-{
-    if (!item)
-        return;
-    clicks.push(item);
-    if (clicks.length == 2) {
-        if (clicks[0].datapoint[0] > clicks[1].datapoint[0]) {
-            // swap
-            var tmp = clicks[0];
-            clicks[0] = clicks[1];
-            clicks[1] = tmp;
-        }
-        $.getJSON("/get_json?x0=" + clicks[0].datapoint[0] + "&x1=" + clicks[1].datapoint[0],
-                  plot_data);
-        return;
-    }
-    $("#start").css({left: pos.pageX});
-    $("#start").show();
-}
-
 function zoom_out()
 {
     $.getJSON("/get_json", plot_data);
@@ -43,23 +20,56 @@ function format_y_axis(val, axis)
     return val + " KiB";
 }
 
+var lastWindow = {};
+function resample(render, plot)
+{
+    var xAxis = plot.getXAxes()[0];
+    var newWindow = {
+        x0: Math.floor(xAxis.min),
+        x1: Math.ceil(xAxis.max)
+    };
+    if (newWindow.x0 != lastWindow.x0 || newWindow.x1 != lastWindow.x1) {
+        $.getJSON("/get_json?x0=" + newWindow.x0 + "&x1=" + newWindow.x1, render);
+        lastWindow = newWindow;
+    }
+}
+
 function plot_data(data)
 {
     glob_data = data;
-    $.plot("#chart", [data['mem']], {
-            grid: {hoverable: true, clickable: true},
-                yaxis: {tickFormatter: format_y_axis}
-                });
-    if (!bind) {
-        $("#chart").bind("plothover", plothover);
-        $("#chart").bind("plotclick", plotclick);
-        bind = true;
+    var axesMax = {
+        x: Math.ceil(data.mem[data.mem.length-1][0]),
+        y: Math.max.apply(null, data.mem.map(function (x) { return x[1]; }))
+    };
+    var axesMargin = {
+        x: 0.05 * axesMax.x,
+        y: 0.05 * axesMax.y
     }
-    clicks = [];
-    $("#start").hide();
+    var maxAxesWindows = {
+        x: [-axesMargin.x, axesMax.x + axesMargin.x],
+        y: [-axesMargin.y, axesMax.y + axesMargin.y],
+    };
+
+    var plotOpts = {
+        grid: {hoverable: true, clickable: true},
+        xaxis: {panRange: maxAxesWindows.x},
+        yaxis: {panRange: maxAxesWindows.y, tickFormatter: format_y_axis},
+        zoom: {interactive: true},
+        pan: {interactive: true}
+    };
+    function render(data) {
+        $.plot("#chart", [data.mem], plotOpts);
+    }
+
+    render(data);
+
+    $("#chart").bind("plothover", plothover);
+    var resampleZoom = $.debounce(10, resample);
+    var resamplePan = $.debounce(100, resample);
+    $("#chart").on("plotzoom", function (event, plot) { resampleZoom(render, plot); });
+    $("#chart").on("plotpan", function (event, plot) { resamplePan(render, plot); });
 }
 
 $(function() {
-        $.getJSON("/get_json", plot_data);
-        $("#start").hide();
+    $.getJSON("/get_json", plot_data);
 })

@@ -42,9 +42,9 @@ def resample_and_pack(profiles, start, end, window_size):
 @app.route('/get_json', methods=['GET'])
 def get_json():
     default_size = 800
-    x0 = float(request.args.get("x0", "0"))
-    x1 = float(request.args.get("x1", len(stats.profiles)))
-    content = resample_and_pack(stats.profiles, x0, x1, default_size)    
+    x0 = max(0, float(request.args.get("x0", 0)))
+    x1 = min(len(stats.profiles), float(request.args.get("x1", 'inf')))
+    content = resample_and_pack(stats.profiles, x0, x1, default_size)
     return Response(json.dumps(content), mimetype="text/json")
 
 @app.route('/')
