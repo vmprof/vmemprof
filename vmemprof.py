@@ -37,26 +37,6 @@ def resample_and_pack(profiles, start, end, window_size):
         i += skip
     return {'mem': mem}
 
-def root_dir():
-    return os.path.abspath(os.path.dirname(__file__))
-
-def get_file(filename):  # pragma: no cover
-    try:
-        src = os.path.join(root_dir(), filename)
-        # Figure out how flask returns static files
-        # Tried:
-        # - render_template
-        # - send_file
-        # This should not be so non-obvious
-        return open(src).read()
-    except IOError as exc:
-        return str(exc)
-
-@app.route('/', methods=['GET'])
-def index():  # pragma: no cover
-    content = get_file('main.html')
-    return Response(content, mimetype="text/html")
-
 @app.route('/get_json', methods=['GET'])
 def get_json():
     default_size = 800
@@ -65,19 +45,9 @@ def get_json():
     content = resample_and_pack(stats.profiles, x0, x1, default_size)    
     return Response(json.dumps(content), mimetype="text/json")
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def get_resource(path):  # pragma: no cover
-    mimetypes = {
-        ".css": "text/css",
-        ".html": "text/html",
-        ".js": "application/javascript",
-    }
-    complete_path = os.path.join(root_dir(), path)
-    ext = os.path.splitext(path)[1]
-    mimetype = mimetypes.get(ext, "text/html")
-    content = get_file(complete_path)
-    return Response(content, mimetype=mimetype)
+@app.route('/')
+def get_resource():  # pragma: no cover
+    return app.send_static_file('main.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
